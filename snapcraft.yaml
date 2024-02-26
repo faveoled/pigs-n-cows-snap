@@ -1,0 +1,57 @@
+name: pigs-n-cows
+summary: S
+description: |
+  D
+version: '1.1.0'
+grade: stable
+confinement: strict
+base: core22
+icon: snap/gui/pigsncows.png
+
+architectures:
+  - build-on: [amd64]
+
+parts:
+  pigs-n-cows:
+    plugin: nil
+    stage-packages:
+      - libnss3
+      - libnspr4
+    build-packages:
+      - wget
+      - libfuse2
+    override-prime: |
+        craftctl default
+
+        # get the AppImage
+        wget -O App.AppImage https://github.com/TheMarlboroMan/pigs-n-cows/releases/download/v1.1.0/Pigs_and_Cows-x86_64.AppImage 
+        chmod +x ./App.AppImage
+        # extract the AppImage
+        ./App.AppImage --appimage-extract
+        # remove the AppImage so it doesn't get copied into final snap package
+        rm App.AppImage
+        # Fix the permissions
+        chmod -R go+rX .
+        
+        rm -rf app
+        mv squashfs-root app
+        
+        cp -r app/usr/share/icons usr/share
+
+apps:
+  pigs-n-cows:
+    extensions: [gnome]
+    command: app/AppRun
+    desktop: app/pigsncows.desktop
+    plugs:
+      - network
+      - audio-playback
+      - browser-support
+      - upower-observe
+    environment:
+      APPDIR: $SNAP/app
+      LD_LIBRARY_PATH: $SNAP/app/usr/lib:$SNAP/usr/lib/$SNAP_ARCH_TRIPLET:$LD_LIBRARY_PATH
+      # Correct the TMPDIR path for Chromium Framework/Electron to ensure
+      # libappindicator has readable resources.
+      TMPDIR: $XDG_RUNTIME_DIR
+
